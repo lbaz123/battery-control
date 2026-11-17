@@ -1,0 +1,39 @@
+---
+description: Engineering standards and collaboration workflow
+alwaysApply: true
+---
+
+# Engineering standards
+
+- Use Python 3.12+, uv for dependency management, and a src-layout package.
+- The tests directory layout must mirror src directory's layout and files.
+- Prefer small, typed functions and dataclasses where they improve clarity.
+- Keep implementation concise, readable, and idiomatic.
+- Prefer standard-library functionality over new dependencies.
+- Use Ruff for formatting and linting.
+- Use github actions for CI.
+- Use unittest and unittest.mock for tests.
+- Add focused tests alongside behaviour changes.
+- Avoid unnecessary abstractions, generic frameworks, and speculative features.
+- Comments should explain non-obvious reasoning, not restate code.
+
+# Collaboration
+
+- Treat the user as the technical lead. Implement only the agreed scope.
+- Before editing, inspect the relevant files and propose a concise plan.
+- Work on a dedicated branch; never commit directly to main.
+- Keep changes small and focused. Do not refactor unrelated code.
+- Do not add dependencies without explaining why they are needed.
+- Run relevant checks and report their actual results.
+- Never claim a test or command passed unless it was executed.
+- Do not merge pull requests without explicit approval.
+- If a requirement is ambiguous, explain the trade-off and ask before implementing.
+- PR descriptions should briefly state what changed, why, and how it was tested.
+
+# Project scope
+
+- This is a time-boxed spike, not a production trading system.
+- Prioritise correctness, clarity, reproducibility, and testability.
+- Do not add functionality beyond the current task.
+- Keep optimisation logic separate from file loading and reporting.
+- Document important assumptions explicitly.

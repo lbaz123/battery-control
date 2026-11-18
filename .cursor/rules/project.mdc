@@ -7,7 +7,7 @@ alwaysApply: true
 
 - Use Python 3.12+, uv for dependency management, and a src-layout package.
 - The tests directory layout must mirror src directory's layout and files.
-- Type-hint all functions, methods, and meaningful locals; use `from __future__ import annotations` in new modules.
+- Annotate return types on functions and methods; type-hint variables when it clarifies intent.
 - Keep implementation concise, readable, and idiomatic.
 - Prefer standard-library functionality over new dependencies.
 - Use Ruff for formatting and linting.

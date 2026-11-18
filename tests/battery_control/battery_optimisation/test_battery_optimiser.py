@@ -11,6 +11,9 @@ from battery_control.battery_optimisation.battery_optimiser import BatteryOptimi
 from battery_control.data_loader.battery_config.battery_config import BatteryConfig
 from battery_control.market_alignment.aligned_market_prices import AlignedMarketPrices
 from battery_control.market_alignment.constants import MARKET_1_INTERVAL_HOURS
+from tests.battery_control.battery_optimisation.test_support import (
+    assert_solution_consistent,
+)
 
 
 def _aligned(
@@ -50,6 +53,7 @@ class TestBatteryOptimiser(unittest.TestCase):
         config: BatteryConfig = _config()
         prices: AlignedMarketPrices = _aligned([0.0, 100.0], [0.0])
         result = self.optimiser.optimise(config, prices)
+        assert_solution_consistent(self, result, config, prices)
         self.assertAlmostEqual(result.total_trading_profit_gbp, 500.0)
         self.assertAlmostEqual(result.state_of_charge_mwh[0], 5.0)
         self.assertAlmostEqual(result.state_of_charge_mwh[-1], 5.0)
@@ -57,13 +61,17 @@ class TestBatteryOptimiser(unittest.TestCase):
         self.assertAlmostEqual(result.market_1_discharge_mw[1], 10.0)
 
     def test_profitable_arbitrage_is_positive(self) -> None:
+        config: BatteryConfig = _config()
         prices: AlignedMarketPrices = _aligned([10.0, 50.0, 200.0, 80.0], [5.0, 40.0])
-        result = self.optimiser.optimise(_config(), prices)
+        result = self.optimiser.optimise(config, prices)
+        assert_solution_consistent(self, result, config, prices)
         self.assertGreater(result.total_trading_profit_gbp, 0.0)
 
     def test_zero_prices_yield_zero_profit(self) -> None:
+        config: BatteryConfig = _config()
         prices: AlignedMarketPrices = _aligned([0.0, 0.0], [0.0])
-        result = self.optimiser.optimise(_config(), prices)
+        result = self.optimiser.optimise(config, prices)
+        assert_solution_consistent(self, result, config, prices)
         self.assertAlmostEqual(result.total_trading_profit_gbp, 0.0)
         self.assertAlmostEqual(result.state_of_charge_mwh[-1], 5.0)
 
@@ -86,6 +94,7 @@ class TestBatteryOptimiser(unittest.TestCase):
         config: BatteryConfig = _config(energy_capacity_mwh=6.0)
         prices: AlignedMarketPrices = _aligned([0.0, 100.0], [0.0])
         result = self.optimiser.optimise(config, prices)
+        assert_solution_consistent(self, result, config, prices)
         self.assertLessEqual(np.max(result.state_of_charge_mwh), 6.0 + 1e-6)
         self.assertAlmostEqual(result.state_of_charge_mwh[0], 3.0)
         self.assertAlmostEqual(result.state_of_charge_mwh[-1], 3.0)
@@ -97,6 +106,7 @@ class TestBatteryOptimiser(unittest.TestCase):
         )
         prices: AlignedMarketPrices = _aligned([0.0, 100.0], [0.0])
         result = self.optimiser.optimise(config, prices)
+        assert_solution_consistent(self, result, config, prices)
         interval_energy: float = 2.0 * MARKET_1_INTERVAL_HOURS
         self.assertAlmostEqual(
             result.total_trading_profit_gbp,
@@ -104,27 +114,16 @@ class TestBatteryOptimiser(unittest.TestCase):
         )
 
     def test_no_simultaneous_charging_and_discharging(self) -> None:
+        config: BatteryConfig = _config()
         prices: AlignedMarketPrices = _aligned([0.0, 100.0, 40.0, 60.0], [0.0, 50.0])
-        result = self.optimiser.optimise(_config(), prices)
-        for half_hour in range(len(prices.market_1_prices_gbp_per_mwh)):
-            hour: int = half_hour // 2
-            total_charge: float = (
-                result.market_1_charge_mw[half_hour] + result.market_2_charge_mw[hour]
-            )
-            total_discharge: float = (
-                result.market_1_discharge_mw[half_hour]
-                + result.market_2_discharge_mw[hour]
-            )
-            self.assertLessEqual(
-                total_charge * total_discharge,
-                1e-6,
-                msg=f"interval {half_hour}",
-            )
+        result = self.optimiser.optimise(config, prices)
+        assert_solution_consistent(self, result, config, prices)
 
     def test_terminal_state_of_charge_matches_initial(self) -> None:
         config: BatteryConfig = _config(energy_capacity_mwh=8.0)
         prices: AlignedMarketPrices = _aligned([5.0, 25.0, 80.0, 15.0], [10.0, 30.0])
         result = self.optimiser.optimise(config, prices)
+        assert_solution_consistent(self, result, config, prices)
         self.assertAlmostEqual(
             result.state_of_charge_mwh[-1],
             0.5 * config.energy_capacity_mwh,

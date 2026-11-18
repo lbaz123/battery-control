@@ -8,7 +8,6 @@ from battery_control.battery_optimisation.optimisation_result import Optimisatio
 from battery_control.battery_optimisation.solution_extractor import SolutionExtractor
 from battery_control.battery_optimisation.trading_milp_builder import TradingMilpBuilder
 from battery_control.battery_optimisation.trading_milp_problem import TradingMilpProblem
-from battery_control.battery_optimisation.variable_layout import VariableLayout
 from battery_control.data_loader.battery_config.battery_config import BatteryConfig
 from battery_control.market_alignment.aligned_market_prices import AlignedMarketPrices
 
@@ -35,10 +34,7 @@ class BatteryOptimiser:
         if not result.success:
             message: str = getattr(result, "message", "") or "MILP solver failed"
             raise BatteryOptimisationError(message)
-        layout: VariableLayout = VariableLayout.from_counts(
-            problem.half_hour_count,
-            problem.hour_count,
-        )
+        layout = problem.layout
         decision_vector: np.ndarray = self._extractor.round_binary_modes(
             np.asarray(result.x, dtype=np.float64),
             layout,

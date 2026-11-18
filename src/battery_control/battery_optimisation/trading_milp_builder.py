@@ -7,6 +7,10 @@ hour in power limits, SOC dynamics and revenue (each half-hour earns
 
 Decision vector layout — see :class:`VariableLayout`.
 
+Decision vector length is ``4N + 2H + N + 1``: ``N`` each for Market 1
+powers and binaries, ``H`` each for Market 2 powers, and ``N + 1`` SOC
+values (see :meth:`VariableLayout.variable_count`).
+
 ``soc[0]`` and ``soc[N]`` are fixed to 50% capacity via bounds.
 """
 
@@ -105,6 +109,7 @@ class TradingMilpBuilder:
                 layout,
                 duration_hours,
             ),
+            layout=layout,
             half_hour_count=half_hour_count,
             hour_count=hour_count,
         )

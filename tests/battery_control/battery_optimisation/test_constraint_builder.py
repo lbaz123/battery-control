@@ -6,6 +6,9 @@ from battery_control.battery_optimisation.constraint_builder import ConstraintBu
 from battery_control.battery_optimisation.variable_layout import VariableLayout
 from battery_control.data_loader.battery_config.battery_config import BatteryConfig
 from battery_control.market_alignment.constants import MARKET_1_INTERVAL_HOURS
+from tests.battery_control.battery_optimisation.test_support import (
+    constraint_row_coefficients,
+)
 
 
 class TestConstraintBuilder(unittest.TestCase):
@@ -24,8 +27,7 @@ class TestConstraintBuilder(unittest.TestCase):
         matrix: sp.csr_matrix = constraint.A.tocsr()
         half_hour: int = 2
         row: int = 3 * half_hour
-        soc_row = matrix.getrow(row)
-        coeffs: dict[int, float] = dict(zip(soc_row.indices, soc_row.data, strict=True))
+        coeffs: dict[int, float] = constraint_row_coefficients(matrix, row)
         hour: int = half_hour // 2
         self.assertAlmostEqual(coeffs[layout.soc_at(half_hour + 1)], 1.0)
         self.assertAlmostEqual(coeffs[layout.soc_at(half_hour)], -1.0)
@@ -41,6 +43,22 @@ class TestConstraintBuilder(unittest.TestCase):
             coeffs[layout.p1d_at(half_hour)],
             duration / config.discharging_efficiency,
         )
+        self.assertAlmostEqual(
+            coeffs[layout.p2d_at(hour)],
+            duration / config.discharging_efficiency,
+        )
+
+    def test_soc_equality_rows_have_zero_bounds(self) -> None:
+        layout: VariableLayout = VariableLayout.from_counts(3, 2)
+        constraint = ConstraintBuilder().build(
+            BatteryConfig(2.0, 2.0, 5.0, 0.95, 0.95),
+            layout,
+            MARKET_1_INTERVAL_HOURS,
+        )
+        for half_hour in range(layout.half_hour_count):
+            soc_row: int = 3 * half_hour
+            self.assertAlmostEqual(constraint.lb[soc_row], 0.0)
+            self.assertAlmostEqual(constraint.ub[soc_row], 0.0)
 
     def test_charge_mode_uses_combined_power_and_binary(self) -> None:
         layout: VariableLayout = VariableLayout.from_counts(2, 1)
@@ -52,15 +70,27 @@ class TestConstraintBuilder(unittest.TestCase):
         )
         matrix: sp.csr_matrix = constraint.A.tocsr()
         charge_row: int = 1
-        slice_start = matrix.indptr[charge_row]
-        slice_end = matrix.indptr[charge_row + 1]
-        row_indices = matrix.indices[slice_start:slice_end]
-        row_data = matrix.data[slice_start:slice_end]
-        by_col = dict(zip(row_indices, row_data, strict=True))
+        by_col = constraint_row_coefficients(matrix, charge_row)
         self.assertAlmostEqual(by_col[layout.p1c_at(0)], 1.0)
         self.assertAlmostEqual(by_col[layout.p2c_at(0)], 1.0)
         self.assertAlmostEqual(by_col[layout.z_at(0)], -5.0)
         self.assertAlmostEqual(constraint.ub[charge_row], 0.0)
+
+    def test_discharge_mode_uses_combined_power_and_binary(self) -> None:
+        layout: VariableLayout = VariableLayout.from_counts(2, 1)
+        config: BatteryConfig = BatteryConfig(5.0, 7.0, 10.0, 1.0, 1.0)
+        constraint = ConstraintBuilder().build(
+            config,
+            layout,
+            MARKET_1_INTERVAL_HOURS,
+        )
+        matrix: sp.csr_matrix = constraint.A.tocsr()
+        discharge_row: int = 2
+        by_col = constraint_row_coefficients(matrix, discharge_row)
+        self.assertAlmostEqual(by_col[layout.p1d_at(0)], 1.0)
+        self.assertAlmostEqual(by_col[layout.p2d_at(0)], 1.0)
+        self.assertAlmostEqual(by_col[layout.z_at(0)], 7.0)
+        self.assertAlmostEqual(constraint.ub[discharge_row], 7.0)
 
     def test_matrix_shape_sparsity_and_nnz(self) -> None:
         half_hour_count: int = 6

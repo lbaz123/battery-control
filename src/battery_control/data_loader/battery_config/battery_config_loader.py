@@ -20,7 +20,8 @@ class BatteryConfigLoader:
 
     def load(self, path: Path | str) -> BatteryConfig:
         config_path: Path = Path(path)
-        frame: pd.DataFrame = pd.read_excel(config_path, sheet_name=0, header=None)
+        with pd.ExcelFile(config_path) as workbook:
+            frame: pd.DataFrame = pd.read_excel(workbook, sheet_name=0, header=None)
         label_to_value: dict[str, float] = self._parse_label_value_table(frame)
 
         charge_mw: float = self._require_label(label_to_value, LABEL_MAX_CHARGE_POWER)

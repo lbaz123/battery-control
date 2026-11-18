@@ -4,6 +4,7 @@ from pathlib import Path
 import numpy as np
 
 from battery_control.battery_optimisation.battery_optimiser import BatteryOptimiser
+from battery_control.battery_optimisation.trading_milp_builder import TradingMilpBuilder
 from battery_control.data_loader.battery_config.battery_config_loader import (
     BatteryConfigLoader,
 )
@@ -32,7 +33,9 @@ class TestBatteryOptimisationSmoke(unittest.TestCase):
             result.market_2_charge_mw.shape,
             aligned.market_2_prices_gbp_per_mwh.shape,
         )
-        initial_soc: float = 0.5 * config.energy_capacity_mwh
+        initial_soc: float = (
+            TradingMilpBuilder.INITIAL_SOC_FRACTION * config.energy_capacity_mwh
+        )
         self.assertAlmostEqual(result.state_of_charge_mwh[0], initial_soc, places=3)
         self.assertAlmostEqual(result.state_of_charge_mwh[-1], initial_soc, places=3)
         self.assertTrue(np.all(result.state_of_charge_mwh >= -1e-6))

@@ -24,6 +24,9 @@ from battery_control.market_alignment.constants import (
     MARKET_2_INTERVAL,
     january_observation_count,
 )
+from battery_control.market_alignment.market_prices_alignment_error import (
+    MarketPricesAlignmentError,
+)
 
 
 class MarketPricesAligner:
@@ -71,16 +74,16 @@ class MarketPricesAligner:
                 f"{market_name} has {len(frame)} observations; "
                 f"need {expected_count} from {start!s} through {end!s}"
             )
-            raise ValueError(msg)
+            raise MarketPricesAlignmentError(msg)
         first: pd.Timestamp = pd.Timestamp(frame.iloc[0][TIMESTAMP_COLUMN])
         if first != start:
             msg = f"{market_name} must start at {start!s}, got {first!s}"
-            raise ValueError(msg)
+            raise MarketPricesAlignmentError(msg)
         window: pd.DataFrame = frame.iloc[:expected_count]
         last: pd.Timestamp = pd.Timestamp(window.iloc[-1][TIMESTAMP_COLUMN])
         if last != end:
             msg = f"{market_name} must end at {end!s}, got {last!s}"
-            raise ValueError(msg)
+            raise MarketPricesAlignmentError(msg)
         expected_timestamps: pd.DatetimeIndex = pd.date_range(
             start,
             end,
@@ -94,5 +97,5 @@ class MarketPricesAligner:
                 f"{market_name} timestamps do not match the expected sequence "
                 f"from {start!s} through {end!s} at {interval!s} spacing"
             )
-            raise ValueError(msg)
+            raise MarketPricesAlignmentError(msg)
         return window

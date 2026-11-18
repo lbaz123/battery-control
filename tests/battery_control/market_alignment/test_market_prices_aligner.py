@@ -17,6 +17,9 @@ from battery_control.market_alignment.constants import (
     january_observation_count,
 )
 from battery_control.market_alignment.market_prices_aligner import MarketPricesAligner
+from battery_control.market_alignment.market_prices_alignment_error import (
+    MarketPricesAlignmentError,
+)
 
 
 def _market_prices(
@@ -38,7 +41,7 @@ def _january_market_1(extra_rows: int = 0) -> pd.DataFrame:
     timestamps: pd.DatetimeIndex = pd.date_range(
         JANUARY_2018_START,
         periods=january_count + extra_rows,
-        freq="30min",
+        freq=MARKET_1_INTERVAL,
     )
     prices: list[float] = [float(index) for index in range(len(timestamps))]
     return pd.DataFrame({TIMESTAMP_COLUMN: timestamps, PRICE_COLUMN: prices})
@@ -53,7 +56,7 @@ def _january_market_2(extra_rows: int = 0) -> pd.DataFrame:
     timestamps: pd.DatetimeIndex = pd.date_range(
         JANUARY_2018_START,
         periods=january_count + extra_rows,
-        freq="1h",
+        freq=MARKET_2_INTERVAL,
     )
     prices: list[float] = [100.0 + index for index in range(len(timestamps))]
     return pd.DataFrame({TIMESTAMP_COLUMN: timestamps, PRICE_COLUMN: prices})
@@ -150,13 +153,13 @@ class TestMarketPricesAligner(unittest.TestCase):
         market_1: pd.DataFrame = _january_market_1()
         market_2: pd.DataFrame = _january_market_2()
         market_1.loc[0, TIMESTAMP_COLUMN] = pd.Timestamp("2018-01-02 00:00:00")
-        with self.assertRaises(ValueError):
+        with self.assertRaises(MarketPricesAlignmentError):
             self.aligner.align(_market_prices(market_1, market_2))
 
     def test_raises_when_insufficient_observations(self) -> None:
         market_1: pd.DataFrame = _january_market_1()[:100]
         market_2: pd.DataFrame = _january_market_2()
-        with self.assertRaises(ValueError):
+        with self.assertRaises(MarketPricesAlignmentError):
             self.aligner.align(_market_prices(market_1, market_2))
 
     def test_raises_when_market_1_timestamps_have_gap(self) -> None:
@@ -179,7 +182,7 @@ class TestMarketPricesAligner(unittest.TestCase):
             JANUARY_2018_END_MARKET_1,
         )
         market_2: pd.DataFrame = _january_market_2()
-        with self.assertRaises(ValueError):
+        with self.assertRaises(MarketPricesAlignmentError):
             self.aligner.align(_market_prices(market_1, market_2))
 
     def test_raises_when_january_window_ends_in_february(self) -> None:
@@ -193,12 +196,12 @@ class TestMarketPricesAligner(unittest.TestCase):
                 TIMESTAMP_COLUMN: pd.date_range(
                     JANUARY_2018_START,
                     periods=market_1_count,
-                    freq="30min",
+                    freq=MARKET_1_INTERVAL,
                 )
                 + pd.Timedelta(hours=1),
                 PRICE_COLUMN: 1.0,
             }
         )
         market_2: pd.DataFrame = _january_market_2()
-        with self.assertRaises(ValueError):
+        with self.assertRaises(MarketPricesAlignmentError):
             self.aligner.align(_market_prices(market_1, market_2))

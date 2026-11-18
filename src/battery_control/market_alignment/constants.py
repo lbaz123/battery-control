@@ -7,8 +7,8 @@ JANUARY_2018_END_MARKET_2: pd.Timestamp = pd.Timestamp("2018-01-31 23:00:00")
 MARKET_1_INTERVAL_HOURS: float = 0.5
 MARKET_2_INTERVAL_HOURS: float = 1.0
 
-MARKET_1_INTERVAL: pd.Timedelta = pd.Timedelta(minutes=30)
-MARKET_2_INTERVAL: pd.Timedelta = pd.Timedelta(hours=1)
+MARKET_1_INTERVAL: pd.Timedelta = pd.Timedelta(hours=MARKET_1_INTERVAL_HOURS)
+MARKET_2_INTERVAL: pd.Timedelta = pd.Timedelta(hours=MARKET_2_INTERVAL_HOURS)
 
 
 def january_observation_count(

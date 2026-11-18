@@ -5,9 +5,10 @@ alwaysApply: true
 
 # Engineering standards
 
-- Use Python 3.12+, uv for dependency management, and a src-layout package.
+- Use Python 3.12+, uv for dependency management, and a src-layout package rooted at `src/battery_control/`.
+- Prefer class-based design for domain types and loaders; put each class in its own module, grouped in a package when several types belong together (for example `battery_control/data_loader/battery_config/battery_config_loader.py`).
 - The tests directory layout must mirror src directory's layout and files.
-- Annotate return types on functions and methods; type-hint variables when it clarifies intent.
+- Annotate return types on functions and methods; type-hint local variables when the value is not obvious from the right-hand side (for example `frame: pd.DataFrame = pd.read_excel(...)`).
 - Keep implementation concise, readable, and idiomatic.
 - Prefer standard-library functionality over new dependencies.
 - Use Ruff for formatting and linting.

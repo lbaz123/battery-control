@@ -5,8 +5,12 @@ from battery_control.data_loader.market_prices.market_prices_loader import (
     MarketPricesLoader,
 )
 from battery_control.market_alignment.constants import (
-    MARKET_1_JANUARY_OBSERVATIONS,
-    MARKET_2_JANUARY_OBSERVATIONS,
+    JANUARY_2018_END_MARKET_1,
+    JANUARY_2018_END_MARKET_2,
+    JANUARY_2018_START,
+    MARKET_1_INTERVAL,
+    MARKET_2_INTERVAL,
+    january_observation_count,
 )
 from battery_control.market_alignment.market_prices_aligner import MarketPricesAligner
 
@@ -20,11 +24,23 @@ class TestMarketAlignmentSmoke(unittest.TestCase):
         aligned = MarketPricesAligner().align(prices)
         self.assertEqual(
             aligned.market_1_prices_gbp_per_mwh.shape,
-            (MARKET_1_JANUARY_OBSERVATIONS,),
+            (
+                january_observation_count(
+                    JANUARY_2018_START,
+                    JANUARY_2018_END_MARKET_1,
+                    MARKET_1_INTERVAL,
+                ),
+            ),
         )
         self.assertEqual(
             aligned.market_2_prices_gbp_per_mwh.shape,
-            (MARKET_2_JANUARY_OBSERVATIONS,),
+            (
+                january_observation_count(
+                    JANUARY_2018_START,
+                    JANUARY_2018_END_MARKET_2,
+                    MARKET_2_INTERVAL,
+                ),
+            ),
         )
         self.assertEqual(aligned.market_1_prices_gbp_per_mwh[0], 48.47)
         self.assertEqual(aligned.market_2_prices_gbp_per_mwh[0], 51.89)

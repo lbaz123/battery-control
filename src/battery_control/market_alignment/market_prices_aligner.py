@@ -21,9 +21,8 @@ from battery_control.market_alignment.constants import (
     JANUARY_2018_END_MARKET_2,
     JANUARY_2018_START,
     MARKET_1_INTERVAL,
-    MARKET_1_JANUARY_OBSERVATIONS,
     MARKET_2_INTERVAL,
-    MARKET_2_JANUARY_OBSERVATIONS,
+    january_observation_count,
 )
 
 
@@ -31,36 +30,20 @@ class MarketPricesAligner:
     """Extracts and validates January 2018 prices from loaded market data."""
 
     def align(self, prices: MarketPrices) -> AlignedMarketPrices:
-        market_1: pd.DataFrame = prices.market_1_half_hourly
-        market_2: pd.DataFrame = prices.market_2_hourly
-        self._require_rows_at_least(
-            market_1,
-            MARKET_1_JANUARY_OBSERVATIONS,
+        january_1: pd.DataFrame = self._january_window(
+            prices.market_1_half_hourly,
             "Market 1",
-        )
-        self._require_rows_at_least(
-            market_2,
-            MARKET_2_JANUARY_OBSERVATIONS,
-            "Market 2",
-        )
-        self._require_start_timestamp(market_1, "Market 1")
-        self._require_start_timestamp(market_2, "Market 2")
-
-        january_1: pd.DataFrame = market_1.iloc[:MARKET_1_JANUARY_OBSERVATIONS]
-        january_2: pd.DataFrame = market_2.iloc[:MARKET_2_JANUARY_OBSERVATIONS]
-        self._require_regular_timestamps(
-            january_1[TIMESTAMP_COLUMN],
-            MARKET_1_INTERVAL,
+            JANUARY_2018_START,
             JANUARY_2018_END_MARKET_1,
-            "Market 1",
+            MARKET_1_INTERVAL,
         )
-        self._require_regular_timestamps(
-            january_2[TIMESTAMP_COLUMN],
-            MARKET_2_INTERVAL,
-            JANUARY_2018_END_MARKET_2,
+        january_2: pd.DataFrame = self._january_window(
+            prices.market_2_hourly,
             "Market 2",
+            JANUARY_2018_START,
+            JANUARY_2018_END_MARKET_2,
+            MARKET_2_INTERVAL,
         )
-
         market_1_prices: np.ndarray = january_1[PRICE_COLUMN].to_numpy(
             dtype=np.float64,
             copy=True,
@@ -74,54 +57,42 @@ class MarketPricesAligner:
             market_2_prices_gbp_per_mwh=market_2_prices,
         )
 
-    def _require_rows_at_least(
+    def _january_window(
         self,
         frame: pd.DataFrame,
-        minimum: int,
         market_name: str,
-    ) -> None:
-        if len(frame) < minimum:
+        start: pd.Timestamp,
+        end: pd.Timestamp,
+        interval: pd.Timedelta,
+    ) -> pd.DataFrame:
+        expected_count: int = january_observation_count(start, end, interval)
+        if len(frame) < expected_count:
             msg = (
                 f"{market_name} has {len(frame)} observations; "
-                f"need at least {minimum} for January 2018"
+                f"need {expected_count} from {start!s} through {end!s}"
             )
             raise ValueError(msg)
-
-    def _require_start_timestamp(
-        self,
-        frame: pd.DataFrame,
-        market_name: str,
-    ) -> None:
-        first: object = frame.iloc[0][TIMESTAMP_COLUMN]
-        timestamp: pd.Timestamp = pd.Timestamp(first)
-        if timestamp != JANUARY_2018_START:
+        first: pd.Timestamp = pd.Timestamp(frame.iloc[0][TIMESTAMP_COLUMN])
+        if first != start:
+            msg = f"{market_name} must start at {start!s}, got {first!s}"
+            raise ValueError(msg)
+        window: pd.DataFrame = frame.iloc[:expected_count]
+        last: pd.Timestamp = pd.Timestamp(window.iloc[-1][TIMESTAMP_COLUMN])
+        if last != end:
+            msg = f"{market_name} must end at {end!s}, got {last!s}"
+            raise ValueError(msg)
+        expected_timestamps: pd.DatetimeIndex = pd.date_range(
+            start,
+            end,
+            freq=interval,
+        )
+        actual_timestamps: pd.DatetimeIndex = pd.DatetimeIndex(
+            window[TIMESTAMP_COLUMN],
+        )
+        if not expected_timestamps.equals(actual_timestamps):
             msg = (
-                f"{market_name} must start at {JANUARY_2018_START!s}, got {timestamp!s}"
+                f"{market_name} timestamps do not match the expected sequence "
+                f"from {start!s} through {end!s} at {interval!s} spacing"
             )
             raise ValueError(msg)
-
-    def _require_regular_timestamps(
-        self,
-        timestamps: pd.Series,
-        interval: pd.Timedelta,
-        expected_end: pd.Timestamp,
-        market_name: str,
-    ) -> None:
-        if timestamps.iloc[0] != JANUARY_2018_START:
-            msg = f"{market_name} January window must start at {JANUARY_2018_START!s}"
-            raise ValueError(msg)
-        if timestamps.iloc[-1] != expected_end:
-            msg = (
-                f"{market_name} January window must end at {expected_end!s}, "
-                f"got {timestamps.iloc[-1]!s}"
-            )
-            raise ValueError(msg)
-        deltas: pd.Series = timestamps.diff().iloc[1:]
-        mismatched: pd.Series = deltas != interval
-        if mismatched.any():
-            bad_index: int = int(mismatched.idxmax())
-            msg = (
-                f"{market_name} timestamps are not evenly spaced by {interval!s} "
-                f"(gap or duplicate near index {bad_index})"
-            )
-            raise ValueError(msg)
+        return window

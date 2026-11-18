@@ -9,9 +9,12 @@ from battery_control.data_loader.market_prices.constants import (
 )
 from battery_control.data_loader.market_prices.market_prices import MarketPrices
 from battery_control.market_alignment.constants import (
+    JANUARY_2018_END_MARKET_1,
+    JANUARY_2018_END_MARKET_2,
     JANUARY_2018_START,
-    MARKET_1_JANUARY_OBSERVATIONS,
-    MARKET_2_JANUARY_OBSERVATIONS,
+    MARKET_1_INTERVAL,
+    MARKET_2_INTERVAL,
+    january_observation_count,
 )
 from battery_control.market_alignment.market_prices_aligner import MarketPricesAligner
 
@@ -27,9 +30,14 @@ def _market_prices(
 
 
 def _january_market_1(extra_rows: int = 0) -> pd.DataFrame:
+    january_count: int = january_observation_count(
+        JANUARY_2018_START,
+        JANUARY_2018_END_MARKET_1,
+        MARKET_1_INTERVAL,
+    )
     timestamps: pd.DatetimeIndex = pd.date_range(
         JANUARY_2018_START,
-        periods=MARKET_1_JANUARY_OBSERVATIONS + extra_rows,
+        periods=january_count + extra_rows,
         freq="30min",
     )
     prices: list[float] = [float(index) for index in range(len(timestamps))]
@@ -37,9 +45,14 @@ def _january_market_1(extra_rows: int = 0) -> pd.DataFrame:
 
 
 def _january_market_2(extra_rows: int = 0) -> pd.DataFrame:
+    january_count: int = january_observation_count(
+        JANUARY_2018_START,
+        JANUARY_2018_END_MARKET_2,
+        MARKET_2_INTERVAL,
+    )
     timestamps: pd.DatetimeIndex = pd.date_range(
         JANUARY_2018_START,
-        periods=MARKET_2_JANUARY_OBSERVATIONS + extra_rows,
+        periods=january_count + extra_rows,
         freq="1h",
     )
     prices: list[float] = [100.0 + index for index in range(len(timestamps))]
@@ -58,8 +71,26 @@ class TestMarketPricesAligner(unittest.TestCase):
             _january_market_2(extra_rows=5),
         )
         aligned = self.aligner.align(prices)
-        self.assertEqual(aligned.market_1_prices_gbp_per_mwh.shape, (1488,))
-        self.assertEqual(aligned.market_2_prices_gbp_per_mwh.shape, (744,))
+        self.assertEqual(
+            aligned.market_1_prices_gbp_per_mwh.shape,
+            (
+                january_observation_count(
+                    JANUARY_2018_START,
+                    JANUARY_2018_END_MARKET_1,
+                    MARKET_1_INTERVAL,
+                ),
+            ),
+        )
+        self.assertEqual(
+            aligned.market_2_prices_gbp_per_mwh.shape,
+            (
+                january_observation_count(
+                    JANUARY_2018_START,
+                    JANUARY_2018_END_MARKET_2,
+                    MARKET_2_INTERVAL,
+                ),
+            ),
+        )
 
     def test_two_to_one_index_pairing(self) -> None:
         market_1: pd.DataFrame = _january_market_1()
@@ -81,12 +112,22 @@ class TestMarketPricesAligner(unittest.TestCase):
         market_1: pd.DataFrame = _january_market_1()
         market_2: pd.DataFrame = _january_market_2()
         aligned = self.aligner.align(_market_prices(market_1, market_2))
-        expected_1: np.ndarray = market_1.iloc[:MARKET_1_JANUARY_OBSERVATIONS][
-            PRICE_COLUMN
-        ].to_numpy(dtype=np.float64)
-        expected_2: np.ndarray = market_2.iloc[:MARKET_2_JANUARY_OBSERVATIONS][
-            PRICE_COLUMN
-        ].to_numpy(dtype=np.float64)
+        market_1_count: int = january_observation_count(
+            JANUARY_2018_START,
+            JANUARY_2018_END_MARKET_1,
+            MARKET_1_INTERVAL,
+        )
+        market_2_count: int = january_observation_count(
+            JANUARY_2018_START,
+            JANUARY_2018_END_MARKET_2,
+            MARKET_2_INTERVAL,
+        )
+        expected_1: np.ndarray = market_1.iloc[:market_1_count][PRICE_COLUMN].to_numpy(
+            dtype=np.float64
+        )
+        expected_2: np.ndarray = market_2.iloc[:market_2_count][PRICE_COLUMN].to_numpy(
+            dtype=np.float64
+        )
         np.testing.assert_array_equal(
             aligned.market_1_prices_gbp_per_mwh,
             expected_1,
@@ -120,24 +161,38 @@ class TestMarketPricesAligner(unittest.TestCase):
 
     def test_raises_when_market_1_timestamps_have_gap(self) -> None:
         market_1: pd.DataFrame = _january_market_1()
-        shifted: pd.Timestamp = market_1.loc[50, TIMESTAMP_COLUMN] + pd.Timedelta(
-            hours=1
+        market_1_count: int = january_observation_count(
+            JANUARY_2018_START,
+            JANUARY_2018_END_MARKET_1,
+            MARKET_1_INTERVAL,
         )
-        market_1.loc[51:, TIMESTAMP_COLUMN] = pd.date_range(
-            shifted,
-            periods=len(market_1) - 51,
-            freq="30min",
+        # Skip one half-hour slot; rows after the gap keep their original
+        # timestamps so first/last bounds still look valid.
+        anchor: pd.Timestamp = market_1.loc[49, TIMESTAMP_COLUMN]
+        market_1.loc[50, TIMESTAMP_COLUMN] = anchor + pd.Timedelta(hours=1)
+        self.assertEqual(
+            market_1.iloc[0][TIMESTAMP_COLUMN],
+            JANUARY_2018_START,
+        )
+        self.assertEqual(
+            market_1.iloc[market_1_count - 1][TIMESTAMP_COLUMN],
+            JANUARY_2018_END_MARKET_1,
         )
         market_2: pd.DataFrame = _january_market_2()
         with self.assertRaises(ValueError):
             self.aligner.align(_market_prices(market_1, market_2))
 
     def test_raises_when_january_window_ends_in_february(self) -> None:
+        market_1_count: int = january_observation_count(
+            JANUARY_2018_START,
+            JANUARY_2018_END_MARKET_1,
+            MARKET_1_INTERVAL,
+        )
         market_1: pd.DataFrame = pd.DataFrame(
             {
                 TIMESTAMP_COLUMN: pd.date_range(
                     JANUARY_2018_START,
-                    periods=MARKET_1_JANUARY_OBSERVATIONS,
+                    periods=market_1_count,
                     freq="30min",
                 )
                 + pd.Timedelta(hours=1),

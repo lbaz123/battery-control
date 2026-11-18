@@ -7,7 +7,7 @@ alwaysApply: true
 
 - Use Python 3.12+, uv for dependency management, and a src-layout package.
 - The tests directory layout must mirror src directory's layout and files.
-- Prefer small, typed functions and dataclasses where they improve clarity.
+- Type-hint all functions, methods, and meaningful locals; use `from __future__ import annotations` in new modules.
 - Keep implementation concise, readable, and idiomatic.
 - Prefer standard-library functionality over new dependencies.
 - Use Ruff for formatting and linting.
@@ -32,7 +32,7 @@ alwaysApply: true
 
 # Project scope
 
-- This is a time-boxed spike, not a production trading system.
+- This is an exploratory project, not a production trading system.
 - Prioritise correctness, clarity, reproducibility, and testability.
 - Do not add functionality beyond the current task.
 - Keep optimisation logic separate from file loading and reporting.

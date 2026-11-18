@@ -1,6 +1,6 @@
 # battery-control
 
-Time-boxed technical spike for Aurora Energy: a reproducible Python workspace for battery control and optimisation work. This repository currently contains project setup only—no modelling, data ingestion, or reporting yet.
+Python workspace for battery storage control and optimisation. This repository currently holds project scaffolding; modelling, data ingestion, and reporting will be added incrementally.
 
 ## Requirements
 
@@ -18,11 +18,12 @@ Run the same checks as CI locally:
 ```bash
 uv run ruff check .
 uv run ruff format --check .
-uv run python -c "import battery_control"
+uv run python -m unittest discover -s smoke_tests -v
 uv run python -m unittest discover -s tests -v
 ```
 
 ## Layout
 
 - `src/battery_control/` — installable package (src layout)
+- `smoke_tests/` — fast checks that the environment and package are usable
 - `tests/` — unittest suite, mirroring `src/`

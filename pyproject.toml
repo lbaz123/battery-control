@@ -1,7 +1,7 @@
 [project]
 name = "battery-control"
 version = "0.1.0"
-description = "Time-boxed spike for Aurora Energy battery control and optimisation."
+description = "Battery storage control and optimisation."
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = []
@@ -18,7 +18,7 @@ line-length = 88
 target-version = "py312"
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "UP"]
+select = ["ANN", "E", "F", "I", "UP"]
 
 [tool.ruff.format]
 quote-style = "double"

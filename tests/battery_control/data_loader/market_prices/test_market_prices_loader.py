@@ -30,9 +30,10 @@ class TestMarketPricesLoader(unittest.TestCase):
         mock_read_excel: MagicMock,
         mock_excel_file: MagicMock,
     ) -> None:
-        mock_excel_file.return_value = MagicMock(
-            sheet_names=["Half-hourly data", "Hourly data"]
+        workbook: MagicMock = MagicMock(
+            sheet_names=["Half-hourly data", "Hourly data"],
         )
+        mock_excel_file.return_value.__enter__.return_value = workbook
         half_hourly: pd.DataFrame = pd.DataFrame(
             [
                 [pd.NaT, "Market 1 Price [£/MWh]"],
@@ -49,7 +50,7 @@ class TestMarketPricesLoader(unittest.TestCase):
         )
 
         def read_side_effect(
-            path: object,
+            _workbook: object,
             sheet_name: str,
             header: None = None,
         ) -> pd.DataFrame:
@@ -90,9 +91,10 @@ class TestMarketPricesLoader(unittest.TestCase):
         mock_read_excel: MagicMock,
         mock_excel_file: MagicMock,
     ) -> None:
-        mock_excel_file.return_value = MagicMock(
-            sheet_names=["Half-hourly data", "Hourly data"]
+        workbook: MagicMock = MagicMock(
+            sheet_names=["Half-hourly data", "Hourly data"],
         )
+        mock_excel_file.return_value.__enter__.return_value = workbook
         half_hourly: pd.DataFrame = pd.DataFrame(
             [
                 [pd.NaT, "Market 1 Price [£/MWh]"],
@@ -107,7 +109,7 @@ class TestMarketPricesLoader(unittest.TestCase):
         )
 
         def read_side_effect(
-            path: object,
+            _workbook: object,
             sheet_name: str,
             header: None = None,
         ) -> pd.DataFrame:

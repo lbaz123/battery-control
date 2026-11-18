@@ -32,11 +32,17 @@ class TestBatteryConfigLoader(unittest.TestCase):
         self.loader = BatteryConfigLoader()
 
     @patch(
+        "battery_control.data_loader.battery_config.battery_config_loader.pd.ExcelFile"
+    )
+    @patch(
         "battery_control.data_loader.battery_config.battery_config_loader.pd.read_excel"
     )
     def test_loads_dispatch_parameters_from_labels(
-        self, mock_read_excel: MagicMock
+        self,
+        mock_read_excel: MagicMock,
+        mock_excel_file: MagicMock,
     ) -> None:
+        mock_excel_file.return_value.__enter__.return_value = MagicMock()
         mock_read_excel.return_value = _spec_frame()
         config: BatteryConfig = self.loader.load("battery_specification.xlsx")
         self.assertEqual(config.max_charge_power_mw, 2.0)
@@ -46,11 +52,17 @@ class TestBatteryConfigLoader(unittest.TestCase):
         self.assertEqual(config.discharging_efficiency, 0.95)
 
     @patch(
+        "battery_control.data_loader.battery_config.battery_config_loader.pd.ExcelFile"
+    )
+    @patch(
         "battery_control.data_loader.battery_config.battery_config_loader.pd.read_excel"
     )
     def test_raises_when_required_label_missing(
-        self, mock_read_excel: MagicMock
+        self,
+        mock_read_excel: MagicMock,
+        mock_excel_file: MagicMock,
     ) -> None:
+        mock_excel_file.return_value.__enter__.return_value = MagicMock()
         frame: pd.DataFrame = _spec_frame().drop(index=4).reset_index(drop=True)
         mock_read_excel.return_value = frame
         with self.assertRaises(BatteryConfigLoadError):

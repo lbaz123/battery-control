@@ -19,20 +19,23 @@ class MarketPricesLoader:
 
     def load(self, path: Path | str) -> MarketPrices:
         prices_path: Path = Path(path)
-        workbook: pd.ExcelFile = pd.ExcelFile(prices_path)
-        half_hourly_sheet: str = self._resolve_sheet_name(
-            workbook.sheet_names,
-            SHEET_HALF_HOURLY,
-            must_contain=("half", "hourly"),
-        )
-        hourly_sheet: str = self._resolve_sheet_name(
-            workbook.sheet_names,
-            SHEET_HOURLY,
-            must_contain=("hourly",),
-            exclude=("half",),
-        )
-        market_1: pd.DataFrame = self._read_price_sheet(prices_path, half_hourly_sheet)
-        market_2: pd.DataFrame = self._read_price_sheet(prices_path, hourly_sheet)
+        with pd.ExcelFile(prices_path) as workbook:
+            half_hourly_sheet: str = self._resolve_sheet_name(
+                workbook.sheet_names,
+                SHEET_HALF_HOURLY,
+                must_contain=("half", "hourly"),
+            )
+            hourly_sheet: str = self._resolve_sheet_name(
+                workbook.sheet_names,
+                SHEET_HOURLY,
+                must_contain=("hourly",),
+                exclude=("half",),
+            )
+            market_1: pd.DataFrame = self._read_price_sheet(
+                workbook,
+                half_hourly_sheet,
+            )
+            market_2: pd.DataFrame = self._read_price_sheet(workbook, hourly_sheet)
         return MarketPrices(
             market_1_half_hourly=market_1,
             market_2_hourly=market_2,
@@ -61,8 +64,12 @@ class MarketPricesLoader:
         msg: str = f"Could not resolve worksheet {exact_name!r} in {sheet_names!r}"
         raise MarketPricesLoadError(msg)
 
-    def _read_price_sheet(self, path: Path, sheet_name: str) -> pd.DataFrame:
-        raw: pd.DataFrame = pd.read_excel(path, sheet_name=sheet_name, header=None)
+    def _read_price_sheet(
+        self,
+        workbook: pd.ExcelFile,
+        sheet_name: str,
+    ) -> pd.DataFrame:
+        raw: pd.DataFrame = pd.read_excel(workbook, sheet_name=sheet_name, header=None)
         if raw.shape[1] < 2:
             msg: str = f"Worksheet {sheet_name!r} must have at least two columns"
             raise MarketPricesLoadError(msg)

@@ -1,10 +1,6 @@
 import unittest
 
-from battery_control.battery_optimisation.trading_milp_builder import (
-    TradingMilpBuilder,
-    build_objective_coefficients,
-    build_variable_bounds,
-)
+from battery_control.battery_optimisation.trading_milp_builder import TradingMilpBuilder
 from battery_control.battery_optimisation.trading_milp_problem import TradingMilpProblem
 from battery_control.battery_optimisation.variable_layout import VariableLayout
 from battery_control.data_loader.battery_config.battery_config import BatteryConfig
@@ -20,7 +16,11 @@ class TestTradingMilpBuilder(unittest.TestCase):
         layout: VariableLayout = VariableLayout.from_counts(2, 1)
         prices = aligned_prices([1.0, 3.0], [5.0])
         duration: float = MARKET_1_INTERVAL_HOURS
-        objective = build_objective_coefficients(prices, layout, duration)
+        objective = TradingMilpBuilder._build_objective_coefficients(
+            prices,
+            layout,
+            duration,
+        )
         self.assertAlmostEqual(objective[layout.p1c_at(0)], 1.0 * duration)
         self.assertAlmostEqual(objective[layout.p2c_at(0)], 2.0 * 5.0 * duration)
         self.assertAlmostEqual(objective[layout.p1d_at(1)], -3.0 * duration)
@@ -37,7 +37,11 @@ class TestTradingMilpBuilder(unittest.TestCase):
         terminal_soc: float = expected_terminal_state_of_charge(
             config.energy_capacity_mwh,
         )
-        bounds = build_variable_bounds(config, layout, terminal_soc)
+        bounds = TradingMilpBuilder._build_variable_bounds(
+            config,
+            layout,
+            terminal_soc,
+        )
         self.assertAlmostEqual(bounds.lb[layout.soc_at(0)], terminal_soc)
         self.assertAlmostEqual(bounds.ub[layout.soc_at(0)], terminal_soc)
         self.assertAlmostEqual(bounds.lb[layout.soc_at(2)], terminal_soc)

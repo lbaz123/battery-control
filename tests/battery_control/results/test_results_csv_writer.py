@@ -1,3 +1,4 @@
+import math
 import tempfile
 import unittest
 from pathlib import Path
@@ -25,3 +26,32 @@ class TestResultsCsvWriter(unittest.TestCase):
             ResultsCsvWriter().write(frame, path)
             loaded = pd.read_csv(path, parse_dates=["interval_start"])
             self.assertEqual(len(loaded), 2)
+
+    def test_csv_never_writes_negative_zero(self) -> None:
+        frame = pd.DataFrame(
+            {
+                "interval_start": pd.to_datetime(["2018-01-01 00:00:00"]),
+                "market_1_charge_mw": [-0.0],
+                "market_1_discharge_mw": [0.0],
+                "market_2_charge_mw": [-0.0],
+                "market_2_discharge_mw": [0.0],
+                "net_battery_power_mw": [-0.0],
+                "soc_start_mwh": [-0.0],
+                "soc_end_mwh": [0.0],
+                "market_1_revenue_gbp": [-0.0],
+                "market_2_revenue_gbp": [0.0],
+            }
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "january_2018_results.csv"
+            ResultsCsvWriter().write(frame, path)
+            text: str = path.read_text()
+            self.assertNotIn("-0.0", text)
+            loaded = pd.read_csv(path)
+            for column in loaded.select_dtypes(include="number").columns:
+                for value in loaded[column]:
+                    if float(value) == 0.0:
+                        self.assertGreaterEqual(
+                            math.copysign(1.0, float(value)),
+                            0.0,
+                        )

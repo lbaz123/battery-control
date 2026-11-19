@@ -1,11 +1,6 @@
-import tempfile
 import unittest
-from io import StringIO
-from pathlib import Path
-from unittest.mock import patch
 
 import numpy as np
-import pandas as pd
 
 from battery_control.battery_optimisation.battery_optimiser import BatteryOptimiser
 from battery_control.battery_optimisation.optimisation_result import OptimisationResult
@@ -15,12 +10,7 @@ from battery_control.market_alignment.constants import (
     MARKET_1_INTERVAL,
     january_observation_count,
 )
-from battery_control.results.reporting import (
-    plot_results_png,
-    print_run_summary,
-    write_results_csv,
-)
-from battery_control.results.results_table import build_january_results_table
+from battery_control.results.results_table_builder import ResultsTableBuilder
 from battery_control.results.trading_revenue import TradingRevenue
 from tests.battery_control.battery_optimisation.test_support import (
     aligned_prices,
@@ -29,8 +19,13 @@ from tests.battery_control.battery_optimisation.test_support import (
 )
 
 
-class TestResultsReporting(unittest.TestCase):
-    def test_january_table_timestamps_and_revenues(self) -> None:
+class TestResultsTableBuilder(unittest.TestCase):
+    builder: ResultsTableBuilder
+
+    def setUp(self) -> None:
+        self.builder = ResultsTableBuilder()
+
+    def test_january_timestamps_and_revenues(self) -> None:
         expected_rows: int = january_observation_count(
             JANUARY_2018_START,
             JANUARY_2018_END_MARKET_1,
@@ -52,7 +47,7 @@ class TestResultsReporting(unittest.TestCase):
             solver_message="synthetic",
         )
         revenue = TradingRevenue.from_optimisation(result, prices)
-        frame = build_january_results_table(result, prices, revenue)
+        frame = self.builder.build(result, prices, revenue)
 
         self.assertEqual(len(frame), expected_rows)
         self.assertEqual(frame["interval_start"].iloc[0], JANUARY_2018_START)
@@ -71,7 +66,7 @@ class TestResultsReporting(unittest.TestCase):
         prices = aligned_prices([0.0, 100.0], [0.0])
         result = BatteryOptimiser().optimise(toy_battery_config(), prices)
         revenue = TradingRevenue.from_optimisation(result, prices)
-        frame = build_january_results_table(result, prices, revenue)
+        frame = self.builder.build(result, prices, revenue)
         self.assertEqual(
             frame["market_2_charge_mw"].iloc[0],
             frame["market_2_charge_mw"].iloc[1],
@@ -80,37 +75,3 @@ class TestResultsReporting(unittest.TestCase):
             frame["soc_end_mwh"].iloc[0],
             frame["soc_start_mwh"].iloc[1],
         )
-
-    def test_csv_and_plot_outputs(self) -> None:
-        prices = aligned_prices([0.0, 100.0], [0.0])
-        config = toy_battery_config()
-        result = BatteryOptimiser().optimise(config, prices)
-        revenue = TradingRevenue.from_optimisation(result, prices)
-        frame = build_january_results_table(result, prices, revenue)
-        with tempfile.TemporaryDirectory() as tmp:
-            csv_path = Path(tmp) / "january_2018_results.csv"
-            png_path = Path(tmp) / "january_2018_results.png"
-            write_results_csv(frame, csv_path)
-            plot_results_png(frame, png_path)
-            loaded = pd.read_csv(csv_path, parse_dates=["interval_start"])
-            self.assertEqual(len(loaded), 2)
-            payload = png_path.read_bytes()
-            self.assertEqual(payload[:8], b"\x89PNG\r\n\x1a\n")
-
-    def test_summary_print_contains_key_lines(self) -> None:
-        prices = aligned_prices([0.0, 100.0], [0.0])
-        config = toy_battery_config()
-        result = BatteryOptimiser().optimise(config, prices)
-        revenue = TradingRevenue.from_optimisation(result, prices)
-        buffer = StringIO()
-        with patch("sys.stdout", buffer):
-            print_run_summary(
-                config,
-                result,
-                revenue,
-                Path("output/january_2018_results.csv"),
-                Path("output/january_2018_results.png"),
-            )
-        text = buffer.getvalue()
-        self.assertIn("Market 1 trading profit", text)
-        self.assertIn("Total trading profit", text)

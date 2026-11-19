@@ -13,14 +13,13 @@ from battery_control.data_loader.market_prices.market_prices_loader import (
     MarketPricesLoader,
 )
 from battery_control.market_alignment.market_prices_aligner import MarketPricesAligner
-from battery_control.results.reporting import (
+from battery_control.results.results_csv_writer import (
     RESULTS_CSV_NAME,
-    RESULTS_PLOT_NAME,
-    plot_results_png,
-    print_run_summary,
-    write_results_csv,
+    ResultsCsvWriter,
 )
-from battery_control.results.results_table import build_january_results_table
+from battery_control.results.results_plotter import RESULTS_PLOT_NAME, ResultsPlotter
+from battery_control.results.results_table_builder import ResultsTableBuilder
+from battery_control.results.run_summary_printer import RunSummaryPrinter
 from battery_control.results.trading_revenue import TradingRevenue
 
 
@@ -53,12 +52,18 @@ def main(argv: list[str] | None = None) -> int:
         aligned = MarketPricesAligner().align(prices)
         result = BatteryOptimiser().optimise(config, aligned)
         revenue = TradingRevenue.from_optimisation(result, aligned)
-        frame = build_january_results_table(result, aligned, revenue)
+        frame = ResultsTableBuilder().build(result, aligned, revenue)
         csv_path: Path = args.output_dir / RESULTS_CSV_NAME
         plot_path: Path = args.output_dir / RESULTS_PLOT_NAME
-        print_run_summary(config, result, revenue, csv_path, plot_path)
-        write_results_csv(frame, csv_path)
-        plot_results_png(frame, plot_path)
+        RunSummaryPrinter().print_summary(
+            config,
+            result,
+            revenue,
+            csv_path,
+            plot_path,
+        )
+        ResultsCsvWriter().write(frame, csv_path)
+        ResultsPlotter().save(frame, plot_path)
     except BatteryOptimisationError as exc:
         print(f"Optimisation failed: {exc}", file=sys.stderr)
         return 1

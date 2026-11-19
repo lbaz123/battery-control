@@ -1,9 +1,7 @@
 from pathlib import Path
 
-import matplotlib.pyplot as plt
 import pandas as pd
 
-RESULTS_PLOT_NAME: str = "january_2018_results.png"
 DISPATCH_HALF_HOURS: int = 48 * 2
 
 
@@ -11,6 +9,11 @@ class ResultsPlotter:
     """Writes the two-panel January results PNG from a results table."""
 
     def save(self, frame: pd.DataFrame, output_path: Path) -> Path:
+        import matplotlib
+
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+
         dispatch_end: int = min(DISPATCH_HALF_HOURS, len(frame))
         dispatch_slice: pd.DataFrame = frame.iloc[:dispatch_end]
         market_1_net: pd.Series = (

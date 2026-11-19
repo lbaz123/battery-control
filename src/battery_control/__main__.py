@@ -13,11 +13,8 @@ from battery_control.data_loader.market_prices.market_prices_loader import (
     MarketPricesLoader,
 )
 from battery_control.market_alignment.market_prices_aligner import MarketPricesAligner
-from battery_control.results.results_csv_writer import (
-    RESULTS_CSV_NAME,
-    ResultsCsvWriter,
-)
-from battery_control.results.results_plotter import RESULTS_PLOT_NAME, ResultsPlotter
+from battery_control.results.constants import RESULTS_CSV_NAME, RESULTS_PLOT_NAME
+from battery_control.results.results_csv_writer import ResultsCsvWriter
 from battery_control.results.results_table_builder import ResultsTableBuilder
 from battery_control.results.run_summary_printer import RunSummaryPrinter
 from battery_control.results.trading_revenue import TradingRevenue
@@ -36,14 +33,14 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description="Run January 2018 battery trading optimisation and export results.",
     )
+    root: Path = _repository_root()
     parser.add_argument(
         "--output-dir",
         type=Path,
-        default=Path("output"),
+        default=Path(root / "output"),
         help="Directory for CSV and PNG outputs (default: output).",
     )
     args = parser.parse_args(argv)
-    root: Path = _repository_root()
     battery_spec: Path = root / "data" / "battery_specification.xlsx"
     market_prices: Path = root / "data" / "market_prices.xlsx"
     try:
@@ -63,6 +60,8 @@ def main(argv: list[str] | None = None) -> int:
             plot_path,
         )
         ResultsCsvWriter().write(frame, csv_path)
+        from battery_control.results.results_plotter import ResultsPlotter
+
         ResultsPlotter().save(frame, plot_path)
     except BatteryOptimisationError as exc:
         print(f"Optimisation failed: {exc}", file=sys.stderr)

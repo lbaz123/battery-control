@@ -3,8 +3,6 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-RESULTS_CSV_NAME: str = "january_2018_results.csv"
-
 
 def _normalize_signed_zeros(frame: pd.DataFrame) -> pd.DataFrame:
     """Replace ``-0.0`` with ``0.0`` so the CSV is easier to read and diff."""

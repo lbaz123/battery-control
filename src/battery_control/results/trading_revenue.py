@@ -1,6 +1,5 @@
-from __future__ import annotations
-
 from dataclasses import dataclass
+from typing import Self
 
 import numpy as np
 
@@ -27,7 +26,7 @@ class TradingRevenue:
         cls,
         result: OptimisationResult,
         prices: AlignedMarketPrices,
-    ) -> TradingRevenue:
+    ) -> Self:
         duration_hours: float = MARKET_1_INTERVAL_HOURS
         half_hour_count: int = len(prices.market_1_prices_gbp_per_mwh)
         market_1_half_hour: np.ndarray = np.zeros(half_hour_count, dtype=np.float64)

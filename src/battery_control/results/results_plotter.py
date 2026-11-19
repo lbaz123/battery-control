@@ -1,20 +1,22 @@
 from pathlib import Path
 
+import matplotlib
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
 import pandas as pd
 
-DISPATCH_HALF_HOURS: int = 48 * 2
+from battery_control.results.constants import (
+    DISPATCH_PLOT_HALF_HOURS,
+    DISPATCH_PLOT_HOURS,
+)
 
 
 class ResultsPlotter:
     """Writes the two-panel January results PNG from a results table."""
 
     def save(self, frame: pd.DataFrame, output_path: Path) -> Path:
-        import matplotlib
-
-        matplotlib.use("Agg")
-        import matplotlib.pyplot as plt
-
-        dispatch_end: int = min(DISPATCH_HALF_HOURS, len(frame))
+        dispatch_end: int = min(DISPATCH_PLOT_HALF_HOURS, len(frame))
         dispatch_slice: pd.DataFrame = frame.iloc[:dispatch_end]
         market_1_net: pd.Series = (
             dispatch_slice["market_1_discharge_mw"]
@@ -58,7 +60,9 @@ class ResultsPlotter:
             label="Market 2 net dispatch (MW)",
             linewidth=1.2,
         )
-        dispatch_axis.set_title("Battery dispatch — first 48 hours of January 2018")
+        dispatch_axis.set_title(
+            f"Battery dispatch — first {DISPATCH_PLOT_HOURS} hours of January 2018",
+        )
         dispatch_axis.set_xlabel("Time")
         dispatch_axis.set_ylabel("Net power (MW); positive = discharge / sell")
         dispatch_axis.legend(loc="best")

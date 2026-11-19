@@ -1,5 +1,4 @@
 import unittest
-from pathlib import Path
 
 from battery_control.data_loader.market_prices.market_prices_loader import (
     MarketPricesLoader,
@@ -13,9 +12,7 @@ from battery_control.market_alignment.constants import (
     january_observation_count,
 )
 from battery_control.market_alignment.market_prices_aligner import MarketPricesAligner
-
-REPO_ROOT: Path = Path(__file__).resolve().parent.parent
-MARKET_PRICES_PATH: Path = REPO_ROOT / "data" / "market_prices.xlsx"
+from smoke_tests.paths import MARKET_PRICES_PATH
 
 
 class TestMarketAlignmentSmoke(unittest.TestCase):

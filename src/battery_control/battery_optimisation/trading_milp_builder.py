@@ -25,53 +25,6 @@ from battery_control.market_alignment.aligned_market_prices import AlignedMarket
 from battery_control.market_alignment.constants import MARKET_1_INTERVAL_HOURS
 
 
-def build_objective_coefficients(
-    prices: AlignedMarketPrices,
-    layout: VariableLayout,
-    duration_hours: float,
-) -> np.ndarray:
-    """Minimisation coefficients (negated trading profit)."""
-    objective: np.ndarray = np.zeros(layout.variable_count, dtype=np.float64)
-    for half_hour in range(layout.half_hour_count):
-        hour: int = half_hour // 2
-        price_1: float = float(prices.market_1_prices_gbp_per_mwh[half_hour])
-        objective[layout.p1c_at(half_hour)] += price_1 * duration_hours
-        objective[layout.p1d_at(half_hour)] -= price_1 * duration_hours
-        price_2: float = float(prices.market_2_prices_gbp_per_mwh[hour])
-        objective[layout.p2c_at(hour)] += price_2 * duration_hours
-        objective[layout.p2d_at(hour)] -= price_2 * duration_hours
-    return objective
-
-
-def build_variable_bounds(
-    config: BatteryConfig,
-    layout: VariableLayout,
-    terminal_soc: float,
-) -> Bounds:
-    lower: np.ndarray = np.zeros(layout.variable_count, dtype=np.float64)
-    upper: np.ndarray = np.full(
-        layout.variable_count,
-        np.inf,
-        dtype=np.float64,
-    )
-    power_cap: float = max(
-        config.max_charge_power_mw,
-        config.max_discharge_power_mw,
-    )
-    upper[layout.p1c] = power_cap
-    upper[layout.p1d] = power_cap
-    upper[layout.p2c] = power_cap
-    upper[layout.p2d] = power_cap
-    lower[layout.soc] = 0.0
-    upper[layout.soc] = config.energy_capacity_mwh
-    lower[layout.soc_at(0)] = terminal_soc
-    upper[layout.soc_at(0)] = terminal_soc
-    lower[layout.soc_at(layout.half_hour_count)] = terminal_soc
-    upper[layout.soc_at(layout.half_hour_count)] = terminal_soc
-    upper[layout.z] = 1.0
-    return Bounds(lower, upper)
-
-
 class TradingMilpBuilder:
     """Assembles objective, bounds and constraints for the trading MILP."""
 
@@ -101,9 +54,13 @@ class TradingMilpBuilder:
         duration_hours: float = MARKET_1_INTERVAL_HOURS
         terminal_soc: float = self.INITIAL_SOC_FRACTION * config.energy_capacity_mwh
         return TradingMilpProblem(
-            objective=build_objective_coefficients(prices, layout, duration_hours),
+            objective=self._build_objective_coefficients(
+                prices,
+                layout,
+                duration_hours,
+            ),
             integrality=layout.integrality_vector(),
-            bounds=build_variable_bounds(config, layout, terminal_soc),
+            bounds=self._build_variable_bounds(config, layout, terminal_soc),
             constraints=self._constraint_builder.build(
                 config,
                 layout,
@@ -113,3 +70,50 @@ class TradingMilpBuilder:
             half_hour_count=half_hour_count,
             hour_count=hour_count,
         )
+
+    @staticmethod
+    def _build_objective_coefficients(
+        prices: AlignedMarketPrices,
+        layout: VariableLayout,
+        duration_hours: float,
+    ) -> np.ndarray:
+        """Minimisation coefficients (negated trading profit)."""
+        objective: np.ndarray = np.zeros(layout.variable_count, dtype=np.float64)
+        for half_hour in range(layout.half_hour_count):
+            hour: int = half_hour // 2
+            price_1: float = float(prices.market_1_prices_gbp_per_mwh[half_hour])
+            objective[layout.p1c_at(half_hour)] += price_1 * duration_hours
+            objective[layout.p1d_at(half_hour)] -= price_1 * duration_hours
+            price_2: float = float(prices.market_2_prices_gbp_per_mwh[hour])
+            objective[layout.p2c_at(hour)] += price_2 * duration_hours
+            objective[layout.p2d_at(hour)] -= price_2 * duration_hours
+        return objective
+
+    @staticmethod
+    def _build_variable_bounds(
+        config: BatteryConfig,
+        layout: VariableLayout,
+        terminal_soc: float,
+    ) -> Bounds:
+        lower: np.ndarray = np.zeros(layout.variable_count, dtype=np.float64)
+        upper: np.ndarray = np.full(
+            layout.variable_count,
+            np.inf,
+            dtype=np.float64,
+        )
+        power_cap: float = max(
+            config.max_charge_power_mw,
+            config.max_discharge_power_mw,
+        )
+        upper[layout.p1c] = power_cap
+        upper[layout.p1d] = power_cap
+        upper[layout.p2c] = power_cap
+        upper[layout.p2d] = power_cap
+        lower[layout.soc] = 0.0
+        upper[layout.soc] = config.energy_capacity_mwh
+        lower[layout.soc_at(0)] = terminal_soc
+        upper[layout.soc_at(0)] = terminal_soc
+        lower[layout.soc_at(layout.half_hour_count)] = terminal_soc
+        upper[layout.soc_at(layout.half_hour_count)] = terminal_soc
+        upper[layout.z] = 1.0
+        return Bounds(lower, upper)

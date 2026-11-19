@@ -1,5 +1,4 @@
 import unittest
-from pathlib import Path
 
 import numpy as np
 
@@ -12,10 +11,7 @@ from battery_control.data_loader.market_prices.market_prices_loader import (
     MarketPricesLoader,
 )
 from battery_control.market_alignment.market_prices_aligner import MarketPricesAligner
-
-REPO_ROOT: Path = Path(__file__).resolve().parent.parent
-BATTERY_SPEC_PATH: Path = REPO_ROOT / "data" / "battery_specification.xlsx"
-MARKET_PRICES_PATH: Path = REPO_ROOT / "data" / "market_prices.xlsx"
+from smoke_tests.paths import BATTERY_SPEC_PATH, MARKET_PRICES_PATH
 
 
 class TestBatteryOptimisationSmoke(unittest.TestCase):

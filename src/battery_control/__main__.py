@@ -15,6 +15,7 @@ from battery_control.data_loader.market_prices.market_prices_loader import (
 from battery_control.market_alignment.market_prices_aligner import MarketPricesAligner
 from battery_control.results.constants import RESULTS_CSV_NAME, RESULTS_PLOT_NAME
 from battery_control.results.results_csv_writer import ResultsCsvWriter
+from battery_control.results.results_plotter import ResultsPlotter
 from battery_control.results.results_table_builder import ResultsTableBuilder
 from battery_control.results.run_summary_printer import RunSummaryPrinter
 from battery_control.results.trading_revenue import TradingRevenue
@@ -60,8 +61,6 @@ def main(argv: list[str] | None = None) -> int:
             plot_path,
         )
         ResultsCsvWriter().write(frame, csv_path)
-        from battery_control.results.results_plotter import ResultsPlotter
-
         ResultsPlotter().save(frame, plot_path)
     except BatteryOptimisationError as exc:
         print(f"Optimisation failed: {exc}", file=sys.stderr)

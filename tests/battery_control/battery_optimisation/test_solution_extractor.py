@@ -2,10 +2,9 @@ import unittest
 
 import numpy as np
 
+from battery_control.battery_optimisation.optimisation_result import OptimisationResult
 from battery_control.battery_optimisation.solution_extractor import SolutionExtractor
-from battery_control.battery_optimisation.trading_milp_builder import (
-    build_objective_coefficients,
-)
+from battery_control.battery_optimisation.trading_milp_builder import TradingMilpBuilder
 from battery_control.battery_optimisation.variable_layout import VariableLayout
 from battery_control.market_alignment.aligned_market_prices import AlignedMarketPrices
 from battery_control.market_alignment.constants import MARKET_1_INTERVAL_HOURS
@@ -33,7 +32,7 @@ class TestSolutionExtractor(unittest.TestCase):
             market_1_prices_gbp_per_mwh=np.array([2.0, 8.0]),
             market_2_prices_gbp_per_mwh=np.array([1.0]),
         )
-        objective = build_objective_coefficients(
+        objective = TradingMilpBuilder._build_objective_coefficients(
             prices,
             layout,
             MARKET_1_INTERVAL_HOURS,
@@ -51,10 +50,6 @@ class TestSolutionExtractor(unittest.TestCase):
             p2d,
             soc,
         ) = _result_like(layout, decision)
-        from battery_control.battery_optimisation.optimisation_result import (
-            OptimisationResult,
-        )
-
         stub: OptimisationResult = OptimisationResult(
             market_1_charge_mw=p1c,
             market_1_discharge_mw=p1d,

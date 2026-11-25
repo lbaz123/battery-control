@@ -18,6 +18,33 @@ alwaysApply: true
 - Avoid unnecessary abstractions, generic frameworks, and speculative features.
 - Comments should explain non-obvious reasoning, not restate code.
 
+# Docstrings
+
+Use **Google-style** docstrings on public and private methods (and on non-trivial module/class docstrings). Put types in the docstring even when the signature is annotated.
+
+- One short summary line, then optional sections: **Args**, **Returns**, **Raises**, or **Attributes** (for dataclasses).
+- Format parameters as ``name (Type): description``; returns as ``Type: description``.
+- Prefer brevity; do not duplicate Sphinx reST ``:param:`` / ``:type:`` pairs.
+- Simple accessors may use a one-line summary only when Args/Returns would repeat the signature.
+
+Example:
+
+```python
+def optimise(self, config: BatteryConfig, prices: AlignedMarketPrices) -> OptimisationResult:
+    """Build and solve the trading MILP for aligned January prices.
+
+    Args:
+        config (BatteryConfig): Battery capacity, power limits, and efficiencies.
+        prices (AlignedMarketPrices): Aligned Market 1 and Market 2 prices.
+
+    Returns:
+        OptimisationResult: Optimal dispatch, state of charge, and trading profit.
+
+    Raises:
+        BatteryOptimisationError: If the solver does not return success.
+    """
+```
+
 # Collaboration
 
 - Treat the user as the technical lead. Implement only the agreed scope.

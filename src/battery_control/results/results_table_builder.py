@@ -18,6 +18,16 @@ class ResultsTableBuilder:
         prices: AlignedMarketPrices,
         revenue: TradingRevenue,
     ) -> pd.DataFrame:
+        """Assemble the half-hourly results table for CSV export and plotting.
+
+        Args:
+            result (OptimisationResult): Optimal dispatch and SOC boundaries.
+            prices (AlignedMarketPrices): Aligned January prices (length sets rows).
+            revenue (TradingRevenue): Per-interval Market 1 and Market 2 revenue.
+
+        Returns:
+            pd.DataFrame: Half-hourly dispatch, SOC, and revenue columns.
+        """
         half_hour_count: int = len(prices.market_1_prices_gbp_per_mwh)
         interval_starts: pd.DatetimeIndex = pd.date_range(
             JANUARY_2018_START,

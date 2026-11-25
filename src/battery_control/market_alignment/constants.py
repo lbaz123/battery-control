@@ -16,5 +16,14 @@ def january_observation_count(
     end: pd.Timestamp,
     interval: pd.Timedelta,
 ) -> int:
-    """Count observations from *start* through *end* at a fixed spacing."""
+    """Count grid points from ``start`` through ``end`` at ``interval`` spacing.
+
+    Args:
+        start (pd.Timestamp): First timestamp (inclusive).
+        end (pd.Timestamp): Last timestamp (inclusive).
+        interval (pd.Timedelta): Spacing between observations.
+
+    Returns:
+        int: Number of observations on the grid.
+    """
     return len(pd.date_range(start, end, freq=interval))

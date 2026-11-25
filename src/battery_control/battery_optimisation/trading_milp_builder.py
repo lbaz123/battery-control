@@ -31,6 +31,7 @@ class TradingMilpBuilder:
     INITIAL_SOC_FRACTION: float = 0.5
 
     def __init__(self) -> None:
+        """Create a builder with a :class:`ConstraintBuilder`."""
         self._constraint_builder: ConstraintBuilder = ConstraintBuilder()
 
     def build(
@@ -38,6 +39,18 @@ class TradingMilpBuilder:
         config: BatteryConfig,
         prices: AlignedMarketPrices,
     ) -> TradingMilpProblem:
+        """Construct a complete MILP from configuration and aligned prices.
+
+        Args:
+            config (BatteryConfig): Battery parameters.
+            prices (AlignedMarketPrices): January prices (Market 1 length 2× Market 2).
+
+        Returns:
+            TradingMilpProblem: Objective, bounds, constraints, and variable layout.
+
+        Raises:
+            ValueError: If Market 1 length is not twice Market 2 length.
+        """
         half_hour_count: int = len(prices.market_1_prices_gbp_per_mwh)
         hour_count: int = len(prices.market_2_prices_gbp_per_mwh)
         if half_hour_count != 2 * hour_count:
@@ -77,7 +90,16 @@ class TradingMilpBuilder:
         layout: VariableLayout,
         duration_hours: float,
     ) -> np.ndarray:
-        """Minimisation coefficients (negated trading profit)."""
+        """Minimisation coefficients (negated trading profit per interval).
+
+        Args:
+            prices (AlignedMarketPrices): Aligned half-hourly and hourly prices.
+            layout (VariableLayout): Decision vector index map.
+            duration_hours (float): Half-hour length in hours.
+
+        Returns:
+            np.ndarray: Objective coefficients, length ``variable_count``.
+        """
         objective: np.ndarray = np.zeros(layout.variable_count, dtype=np.float64)
         for half_hour in range(layout.half_hour_count):
             hour: int = half_hour // 2
@@ -95,6 +117,16 @@ class TradingMilpBuilder:
         layout: VariableLayout,
         terminal_soc: float,
     ) -> Bounds:
+        """Box limits for powers, SOC, mode binaries, and fixed start/end SOC.
+
+        Args:
+            config (BatteryConfig): Battery parameters.
+            layout (VariableLayout): Decision vector index map.
+            terminal_soc (float): Fixed SOC (MWh) at the first and last boundary.
+
+        Returns:
+            Bounds: SciPy per-variable lower and upper limits.
+        """
         lower: np.ndarray = np.zeros(layout.variable_count, dtype=np.float64)
         upper: np.ndarray = np.full(
             layout.variable_count,

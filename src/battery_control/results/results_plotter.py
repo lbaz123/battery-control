@@ -16,6 +16,15 @@ class ResultsPlotter:
     """Writes the two-panel January results PNG from a results table."""
 
     def save(self, frame: pd.DataFrame, output_path: Path) -> Path:
+        """Write the two-panel dispatch and cumulative-profit PNG.
+
+        Args:
+            frame (pd.DataFrame): Results table from :class:`ResultsTableBuilder`.
+            output_path (Path): Destination ``.png`` file.
+
+        Returns:
+            Path: ``output_path`` after the file is written.
+        """
         dispatch_end: int = min(DISPATCH_PLOT_HALF_HOURS, len(frame))
         dispatch_slice: pd.DataFrame = frame.iloc[:dispatch_end]
         market_1_net: pd.Series = (

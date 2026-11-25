@@ -19,6 +19,17 @@ class BatteryConfigLoader:
     """Reads dispatch parameters from the battery specification workbook."""
 
     def load(self, path: Path | str) -> BatteryConfig:
+        """Parse the battery specification workbook into a :class:`BatteryConfig`.
+
+        Args:
+            path (Path | str): Path to ``battery_specification.xlsx``.
+
+        Returns:
+            BatteryConfig: Dispatch parameters and efficiencies.
+
+        Raises:
+            BatteryConfigLoadError: If layout or required labels are missing.
+        """
         config_path: Path = Path(path)
         with pd.ExcelFile(config_path) as workbook:
             frame: pd.DataFrame = pd.read_excel(workbook, sheet_name=0, header=None)
@@ -46,6 +57,14 @@ class BatteryConfigLoader:
         )
 
     def _parse_label_value_table(self, frame: pd.DataFrame) -> dict[str, float]:
+        """Extract label-to-value pairs below the ``Values`` header row.
+
+        Args:
+            frame (pd.DataFrame): Raw worksheet with ``header=None``.
+
+        Returns:
+            dict[str, float]: Parsed parameter labels and numeric values.
+        """
         value_col: int
         label_col: int
         header_row: int
@@ -62,6 +81,17 @@ class BatteryConfigLoader:
         return label_to_value
 
     def _locate_label_value_columns(self, frame: pd.DataFrame) -> tuple[int, int, int]:
+        """Find value column, label column, and header row for the spec table.
+
+        Args:
+            frame (pd.DataFrame): Raw battery specification sheet.
+
+        Returns:
+            tuple[int, int, int]: ``(value_col, label_col, header_row)``.
+
+        Raises:
+            BatteryConfigLoadError: If no ``Values`` header is found.
+        """
         scan_rows: int = min(len(frame), 10)
         for row_index in range(scan_rows):
             for col_index in range(frame.shape[1]):
@@ -76,6 +106,18 @@ class BatteryConfigLoader:
         raise BatteryConfigLoadError(msg)
 
     def _require_label(self, label_to_value: dict[str, float], label: str) -> float:
+        """Return a required parameter or raise.
+
+        Args:
+            label_to_value (dict[str, float]): Parsed workbook parameters.
+            label (str): Expected label text.
+
+        Returns:
+            float: Parameter value.
+
+        Raises:
+            BatteryConfigLoadError: If ``label`` is absent.
+        """
         if label not in label_to_value:
             msg = f"Missing required battery parameter: {label!r}"
             raise BatteryConfigLoadError(msg)

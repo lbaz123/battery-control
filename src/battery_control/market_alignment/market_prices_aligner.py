@@ -33,6 +33,17 @@ class MarketPricesAligner:
     """Extracts and validates January 2018 prices from loaded market data."""
 
     def align(self, prices: MarketPrices) -> AlignedMarketPrices:
+        """Return validated January 2018 price arrays for optimisation.
+
+        Args:
+            prices (MarketPrices): Loaded Market 1 and Market 2 price tables.
+
+        Returns:
+            AlignedMarketPrices: Half-hourly and hourly NumPy price vectors.
+
+        Raises:
+            MarketPricesAlignmentError: If the January window is invalid.
+        """
         january_1: pd.DataFrame = self._january_window(
             prices.market_1_half_hourly,
             "Market 1",
@@ -68,6 +79,21 @@ class MarketPricesAligner:
         end: pd.Timestamp,
         interval: pd.Timedelta,
     ) -> pd.DataFrame:
+        """Slice the first ``N`` rows on a regular timestamp grid.
+
+        Args:
+            frame (pd.DataFrame): Price observations in loader row order.
+            market_name (str): Label for error messages.
+            start (pd.Timestamp): Required first timestamp (inclusive).
+            end (pd.Timestamp): Required last timestamp (inclusive).
+            interval (pd.Timedelta): Spacing between observations.
+
+        Returns:
+            pd.DataFrame: January window with timestamp and price columns.
+
+        Raises:
+            MarketPricesAlignmentError: If length or timestamps do not match.
+        """
         expected_count: int = january_observation_count(start, end, interval)
         if len(frame) < expected_count:
             msg = (

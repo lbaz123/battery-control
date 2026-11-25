@@ -22,6 +22,14 @@ from battery_control.results.trading_revenue import TradingRevenue
 
 
 def _repository_root() -> Path:
+    """Locate the repository root (directory containing ``pyproject.toml``).
+
+    Returns:
+        Path: Repository root path.
+
+    Raises:
+        FileNotFoundError: If no parent contains ``pyproject.toml``.
+    """
     candidate: Path = Path(__file__).resolve()
     for path in (candidate, *candidate.parents):
         if (path / "pyproject.toml").is_file():
@@ -31,6 +39,14 @@ def _repository_root() -> Path:
 
 
 def main(argv: list[str] | None = None) -> int:
+    """Run January optimisation and write CSV and PNG results.
+
+    Args:
+        argv (list[str] | None): Command-line arguments; ``None`` uses ``sys.argv``.
+
+    Returns:
+        int: ``0`` on success, ``1`` if optimisation fails.
+    """
     parser = argparse.ArgumentParser(
         description="Run January 2018 battery trading optimisation and export results.",
     )

@@ -22,6 +22,15 @@ class RunSummaryPrinter:
         csv_path: Path,
         plot_path: Path,
     ) -> None:
+        """Print battery parameters, profit, solver status, and output paths.
+
+        Args:
+            config (BatteryConfig): Battery parameters used in the run.
+            result (OptimisationResult): MILP solution and solver metadata.
+            revenue (TradingRevenue): Market-split revenue summary.
+            csv_path (Path): Written CSV path to list in the summary.
+            plot_path (Path): Written PNG path to list in the summary.
+        """
         interval_count: int = january_observation_count(
             JANUARY_2018_START,
             JANUARY_2018_END_MARKET_1,

@@ -7,6 +7,11 @@ class SparseConstraintAccumulator:
     """Collects COO constraint rows for a single sparse ``LinearConstraint``."""
 
     def __init__(self, variable_count: int) -> None:
+        """Allocate storage for a sparse constraint matrix.
+
+        Args:
+            variable_count (int): Number of decision variables (columns).
+        """
         self._variable_count: int = variable_count
         self._rows: list[int] = []
         self._columns: list[int] = []
@@ -23,6 +28,14 @@ class SparseConstraintAccumulator:
         lower: float,
         upper: float,
     ) -> None:
+        """Append one row ``lower <= coefficients @ x <= upper``.
+
+        Args:
+            columns (list[int]): Indices of non-zero variables.
+            coefficients (list[float]): Row coefficients aligned with ``columns``.
+            lower (float): Row lower bound.
+            upper (float): Row upper bound.
+        """
         row: int = self._next_row
         self._next_row += 1
         self._rows.extend([row] * len(columns))
@@ -32,6 +45,11 @@ class SparseConstraintAccumulator:
         self._upper_bounds.append(upper)
 
     def to_linear_constraint(self) -> LinearConstraint:
+        """Materialise accumulated rows as a SciPy constraint.
+
+        Returns:
+            LinearConstraint: Sparse matrix and per-row bounds.
+        """
         matrix: sp.csr_matrix = sp.csr_matrix(
             (self._values, (self._rows, self._columns)),
             shape=(self._next_row, self._variable_count),

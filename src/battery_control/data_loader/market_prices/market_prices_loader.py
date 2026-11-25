@@ -18,6 +18,17 @@ class MarketPricesLoader:
     """Reads Market 1 and Market 2 price series without resampling or alignment."""
 
     def load(self, path: Path | str) -> MarketPrices:
+        """Load both market worksheets without alignment or resampling.
+
+        Args:
+            path (Path | str): Path to ``market_prices.xlsx``.
+
+        Returns:
+            MarketPrices: Half-hourly and hourly price tables.
+
+        Raises:
+            MarketPricesLoadError: If sheets cannot be resolved or are empty.
+        """
         prices_path: Path = Path(path)
         with pd.ExcelFile(prices_path) as workbook:
             half_hourly_sheet: str = self._resolve_sheet_name(
@@ -48,6 +59,20 @@ class MarketPricesLoader:
         must_contain: tuple[str, ...],
         exclude: tuple[str, ...] = (),
     ) -> str:
+        """Resolve a worksheet name by exact match or unique keyword match.
+
+        Args:
+            sheet_names (list[str]): Names in the workbook.
+            exact_name (str): Preferred sheet name from constants.
+            must_contain (tuple[str, ...]): Substrings required in a fallback match.
+            exclude (tuple[str, ...]): Substrings that disqualify a fallback match.
+
+        Returns:
+            str: Resolved worksheet name.
+
+        Raises:
+            MarketPricesLoadError: If no unique match is found.
+        """
         if exact_name in sheet_names:
             return exact_name
         lowered: list[str] = [name.lower() for name in sheet_names]
@@ -69,6 +94,18 @@ class MarketPricesLoader:
         workbook: pd.ExcelFile,
         sheet_name: str,
     ) -> pd.DataFrame:
+        """Read timestamp and price columns, dropping invalid rows.
+
+        Args:
+            workbook (pd.ExcelFile): Open market prices workbook.
+            sheet_name (str): Worksheet to read.
+
+        Returns:
+            pd.DataFrame: Timestamp and price columns in loader row order.
+
+        Raises:
+            MarketPricesLoadError: If the sheet is too narrow or has no valid rows.
+        """
         raw: pd.DataFrame = pd.read_excel(workbook, sheet_name=sheet_name, header=None)
         if raw.shape[1] < 2:
             msg: str = f"Worksheet {sheet_name!r} must have at least two columns"

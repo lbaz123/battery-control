@@ -16,6 +16,7 @@ class BatteryOptimiser:
     """Solves the January trading MILP using SciPy HiGHS."""
 
     def __init__(self) -> None:
+        """Wire up the MILP builder and solution extractor."""
         self._builder: TradingMilpBuilder = TradingMilpBuilder()
         self._extractor: SolutionExtractor = SolutionExtractor()
 
@@ -24,6 +25,18 @@ class BatteryOptimiser:
         config: BatteryConfig,
         prices: AlignedMarketPrices,
     ) -> OptimisationResult:
+        """Build and solve the trading MILP for aligned January prices.
+
+        Args:
+            config (BatteryConfig): Battery capacity, power limits, and efficiencies.
+            prices (AlignedMarketPrices): Aligned Market 1 and Market 2 prices.
+
+        Returns:
+            OptimisationResult: Optimal dispatch, state of charge, and trading profit.
+
+        Raises:
+            BatteryOptimisationError: If the solver does not return success.
+        """
         problem: TradingMilpProblem = self._builder.build(config, prices)
         result = milp(
             problem.objective,

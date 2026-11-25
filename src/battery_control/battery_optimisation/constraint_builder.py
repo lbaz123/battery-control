@@ -17,6 +17,16 @@ class ConstraintBuilder:
         layout: VariableLayout,
         duration_hours: float,
     ) -> LinearConstraint:
+        """SOC balance plus charge and discharge rows per half-hour (mode ``z``).
+
+        Args:
+            config (BatteryConfig): Battery parameters.
+            layout (VariableLayout): Decision vector index map.
+            duration_hours (float): Half-hour length in hours.
+
+        Returns:
+            LinearConstraint: Sparse constraints for ``scipy.optimize.milp``.
+        """
         accumulator: SparseConstraintAccumulator = SparseConstraintAccumulator(
             layout.variable_count,
         )
